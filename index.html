@@ -1,0 +1,59 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Login screen (shown until authenticated) -->
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-modal">
+        <h2>Control Panel Sign In</h2>
+        <p class="login-subtitle">Admin and editor access only</p>
+        <div id="loginError" class="login-error" style="display:none;"></div>
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="username">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+        <div class="login-actions">
+            <button type="button" class="btn btn-primary" id="loginBtn">Sign in</button>
+            <button type="button" class="btn" id="googleLoginBtn">Sign in with Google</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main app (hidden until authenticated) -->
+<div class="app" id="mainApp" style="display:none;">
+    <div class="sidebar">
+        <div class="logo-area"><h2>Control Panel</h2></div>
+        <div class="nav-menu">
+            <div class="nav-item active" data-view="dashboard">Dashboard</div>
+            <div class="nav-item" data-view="posts">Posts</div>
+            <div class="nav-item admin-only" data-view="activity">Activity Log</div>
+            <div class="nav-item admin-only" data-view="users">Users</div>
+        </div>
+        <div class="user-profile">
+            <div class="profile-avatar"></div>
+            <div><strong id="sidebarUser">-</strong><br><span id="sidebarRole">-</span></div>
+        </div>
+    </div>
+    <div class="main">
+        <div class="top-bar">
+            <div><input type="text" placeholder="Search posts..." id="globalSearch" style="background:var(--bg); border:none; padding:6px; border-radius:20px; width:200px;"></div>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <span id="mainUserName">-</span>
+                <button id="signOutBtn" class="btn">Sign out</button>
+            </div>
+        </div>
+        <div id="viewContainer"></div>
+    </div>
+</div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
+
