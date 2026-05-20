@@ -1,6 +1,6 @@
 ﻿// BoardCtrl – Firebase v9 modular; roles from Firestore users/{uid}.role only
 
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, limit, serverTimestamp, Timestamp, deleteField
@@ -510,22 +510,20 @@ function renderDashboard() {
   const urgentCount = posts.filter((p) => p.urgent).length;
   const scheduledCount = posts.filter((p) => p.hasSchedule).length;
 
-  // Recent activity (admin only)
   const recentRows = auditLog.slice(0, 5).map((l) => {
     const ts = l.timestamp ? escapeHtml(l.timestamp.toLocaleTimeString()) : "";
     return `<tr><td style="border:1px solid var(--border);padding:0.5rem;">${escapeHtml(l.user)}</td>
       <td style="border:1px solid var(--border);padding:0.5rem;">${escapeHtml(l.action)}</td>
-      <td style="border:1px solid var(--border);padding:0.5rem;">${ts}</td></tr>`;
+      <td style="border:1px solid var(--border);padding:0.5rem;">${ts}ns<\/td></td>`;
   }).join("");
 
   const activitySection = currentRole === "admin"
-    ? `<td><div class="section-header">Recent Activity</div><div class="section-content">
+    ? `<tr><div class="section-header">Recent Activity</div><div class="section-content">
         <table class="data-table"><thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead>
-        <tbody>${recentRows || '<td><td colspan="3">No activity yet</td></tr>'}</tbody>
-       </table></div></td>`
+        <tbody>${recentRows || '<td><td colspan="3">No activity yet<\/td><\/tr>'}</tbody>
+        </table></div></td>`
     : "";
 
-  // Editor dashboard: show all posts in a compact table
   let postsSection = "";
   if (currentRole === "editor") {
     const allPostsRows = posts.map((p) => {
@@ -542,7 +540,7 @@ function renderDashboard() {
           ${editable ? `<button class="btn" data-action="edit" data-id="${id}">Edit</button>` : ""}
           ${editable ? `<button class="btn" data-action="delete" data-id="${id}">Delete</button>` : ""}
         </td>
-      <tr>`;
+      </tr>`;
     }).join("");
 
     postsSection = `<td>
@@ -550,13 +548,13 @@ function renderDashboard() {
       <div class="section-content">
         <table class="data-table" style="width:100%;">
           <thead><tr><th>Title</th><th>Type</th><th>Created</th><th>Created By</th><th>Actions</th></tr></thead>
-          <tbody>${allPostsRows || '<td><td colspan="5">No posts yet</td></tr>'}</tbody>
+          <tbody>${allPostsRows || '<td><td colspan="5">No posts yet<\/td><\/tr>'}</tbody>
         </table>
       </div>
     </td>`;
   }
 
-  const statsHtml = `
+  let statsHtml = `
     <table class="dashboard-table">
       <tr>
         <td colspan="${currentRole === "admin" ? 1 : 2}">
@@ -572,21 +570,15 @@ function renderDashboard() {
         ${activitySection}
       </tr>
       ${postsSection}
-      <tr>
-        <td colspan="2">
-          <div class="section-header">Quick Actions</div>
-          <div class="section-content">
-            <button class="btn btn-primary" id="quickNewPost">+ New Post</button>
-          </div>
-        </td>
-      </tr>
-    </table>
   `;
+
+  if (currentRole === "admin") {
+    statsHtml += `<tr><td colspan="2"><div class="section-header">Quick Actions</div><div class="section-content"><button class="btn btn-primary" id="quickNewPost">+ New Post</button></div><\/td><\/tr>`;
+  }
+  statsHtml += `<\/table>`;
 
   document.getElementById("viewContainer").innerHTML = statsHtml;
   document.getElementById("quickNewPost")?.addEventListener("click", newPost);
-
-  // Attach event listeners for inline edit/delete buttons
   document.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const { id, action } = btn.dataset;
@@ -595,6 +587,7 @@ function renderDashboard() {
     });
   });
 }
+
 function renderPosts() {
   const filtered = posts.filter((p) => {
     if (currentFilter !== "all" && p.postType !== currentFilter) return false;
@@ -645,7 +638,8 @@ function renderPosts() {
         ).join("")}</div>
         <input type="text" id="postSearch" placeholder="Search by title..." style="width:100%;padding:6px;margin-bottom:1rem;border-radius:20px;border:1px solid var(--border);background:var(--bg);">
         <div id="postsList">${cards || '<div style="text-align:center;padding:2rem;">No posts match</div>'}</div>
-      </div></td></tr></table>`;
+      </div><\/td><\/tr>
+    <\/table>`;
 
   document.getElementById("newPostBtn")?.addEventListener("click", newPost);
   document.getElementById("postSearch")?.addEventListener("input", (e) => { searchTerm = e.target.value; renderPosts(); });
@@ -672,13 +666,112 @@ function renderActivity() {
     const ts = l.timestamp ? escapeHtml(l.timestamp.toLocaleString()) : "";
     return `<tr><td style="border:1px solid var(--border);padding:0.5rem;">${escapeHtml(l.user)}</td>
       <td style="border:1px solid var(--border);padding:0.5rem;">${escapeHtml(l.action)}</td>
-      <td style="border:1px solid var(--border);padding:0.5rem;">${ts}</td></tr>`;
+      <td style="border:1px solid var(--border);padding:0.5rem;">${ts}ns<\/td><tr>`;
   }).join("");
   document.getElementById("viewContainer").innerHTML = `
     <table class="dashboard-table"><tr><td><div class="section-header">Activity Log</div>
     <div class="section-content"><table class="data-table">
     <thead><tr><th>User</th><th>Action</th><th>Timestamp</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="3">No activity yet</td></tr>'}</tbody></table></div></td></tr></table>`;
+    <tbody>${rows || '<td><td colspan="3">No activity yet<\/td><\/tr>'}</tbody></table></div><\/td><\/tr><\/table>`;
+}
+
+function showCreateUserModal() {
+  // Remove existing modal if any
+  const existing = document.getElementById("createUserModalOverlay");
+  if (existing) existing.remove();
+
+  const modalHtml = `
+    <div class="modal-overlay" id="createUserModalOverlay" style="z-index: 1200;">
+      <div class="modal" style="max-width: 450px;">
+        <h3>Create Editor User</h3>
+        <div class="field-group">
+          <label>Email</label>
+          <input type="email" id="newUserEmail" placeholder="editor@example.com">
+          <div id="emailError" class="field-error" style="display:none;"></div>
+        </div>
+        <div class="field-group">
+          <label>Password</label>
+          <input type="password" id="newUserPassword" placeholder="at least 6 characters">
+          <div id="passwordError" class="field-error" style="display:none;"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" id="cancelCreateUserBtn">Cancel</button>
+          <button class="btn btn-primary" id="confirmCreateUserBtn">Create User</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+  const modalDiv = document.getElementById("createUserModalOverlay");
+  const emailInput = document.getElementById("newUserEmail");
+  const passwordInput = document.getElementById("newUserPassword");
+  const emailError = document.getElementById("emailError");
+  const passwordError = document.getElementById("passwordError");
+
+  function clearErrors() {
+    emailError.style.display = "none";
+    passwordError.style.display = "none";
+  }
+
+  function hideErrorOnInput() {
+    emailInput.addEventListener("input", () => { emailError.style.display = "none"; });
+    passwordInput.addEventListener("input", () => { passwordError.style.display = "none"; });
+  }
+  hideErrorOnInput();
+
+  modalDiv.addEventListener("click", (e) => {
+    if (e.target === modalDiv) modalDiv.remove();
+  });
+
+  document.getElementById("cancelCreateUserBtn").onclick = () => modalDiv.remove();
+  document.getElementById("confirmCreateUserBtn").onclick = async () => {
+    clearErrors();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    let isValid = true;
+
+    if (!email || !email.includes("@")) {
+      emailError.textContent = "Valid email is required.";
+      emailError.style.display = "block";
+      isValid = false;
+    }
+    if (!password || password.length < 6) {
+      passwordError.textContent = "Password must be at least 6 characters.";
+      passwordError.style.display = "block";
+      isValid = false;
+    }
+    if (!isValid) return;
+
+    const createBtn = document.getElementById("confirmCreateUserBtn");
+    createBtn.disabled = true;
+    createBtn.textContent = "Creating...";
+    try {
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      // Create Firestore user document with role "editor"
+      await setDoc(doc(db, "users", uid), {
+        email: email,
+        username: email.split("@")[0],
+        role: "editor"
+      });
+      await addAuditLog(`Created new editor user: ${email}`);
+      alert(`✅ User created successfully!\n\nEmail: ${email}\nRole: editor`);
+      modalDiv.remove();
+    } catch (err) {
+      console.error(err);
+      let message = err.message;
+      if (err.code === "auth/email-already-in-use") {
+        message = "Email already registered. Use a different email.";
+      } else if (err.code === "auth/weak-password") {
+        message = "Password is too weak (minimum 6 characters).";
+      }
+      alert(`❌ Error: ${message}`);
+    } finally {
+      createBtn.disabled = false;
+      createBtn.textContent = "Create User";
+    }
+  };
 }
 
 function renderUsers() {
@@ -691,14 +784,29 @@ function renderUsers() {
       <td style="border:1px solid var(--border);padding:0.5rem;">
         ${u.role !== "admin" ? `<button class="btn" data-promote="${uid}">Make Admin</button>
         <button class="btn" data-remove-user="${uid}">Remove</button>` : "-"}
-      </td></tr>`;
+      </td>
+    </tr>`;
   }).join("");
-  document.getElementById("viewContainer").innerHTML = `
-    <table class="dashboard-table"><tr><td><div class="section-header">Users</div>
-    <div class="section-content"><table class="data-table">
-    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="4">No users in collection</td></tr>'}</tbody></table></div></td></tr></table>`;
 
+  document.getElementById("viewContainer").innerHTML = `
+    <table class="dashboard-table">
+      <tr>
+        <td>
+          <div class="section-header">
+            <span>Users</span>
+            <button class="btn btn-primary" id="createUserBtn">+ Create User</button>
+          </div>
+          <div class="section-content">
+            <table class="data-table">
+              <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+              <tbody>${rows || '<td><td colspan="4">No users in collection<\/td><\/tr>'}</tbody>
+            </table>
+          </div>
+        <\/td>
+      <\/tr>
+    <\/table>`;
+
+  document.getElementById("createUserBtn")?.addEventListener("click", showCreateUserModal);
   document.querySelectorAll("[data-promote]").forEach((btn) => {
     btn.addEventListener("click", () => promoteUser(btn.dataset.promote));
   });
@@ -713,7 +821,6 @@ async function promoteUser(id) {
   try {
     await updateDoc(doc(db, "users", id), { role: "admin" });
     await addAuditLog(`Promoted ${u.email} to admin`);
-    // Role is read from Firestore at login — user must sign out and back in.
     alert("Role updated in Firestore. The user must sign out and sign back in for the new role to take effect.");
   } catch (err) { alert(err.message || "Promotion failed."); }
 }

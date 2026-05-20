@@ -236,6 +236,11 @@ body {
     background: var(--surface);
     border-color: var(--primary);
 }
+.field-error {
+    font-size: 0.75rem;
+    color: #b91c1c;
+    margin-top: 4px;
+}
 
 /* Login overlay */
 .login-overlay {
